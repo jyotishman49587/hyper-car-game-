@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Runner: OVERDRIVE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff0055;
+            --neon-purple: #bc13fe;
+            --neon-green: #0aff0a;
+            --bg-dark: #050508;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+            user-select: none;
+        }
+
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            outline: none;
+        }
+
+        /* --- UI Overlay --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 40px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        .hud-module {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-center {
+            text-align: center;
+        }
+
+        .label {
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            letter-spacing: 2px;
+            opacity: 0.8;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+
+        .value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #score-display .value { color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
+        #speed-display .value { color: var(--neon-purple); text-shadow: 0 0 15px var(--neon-purple); }
+        #high-score-display .value { color: var(--neon-green); font-size: 1.5rem; }
+        
+        /* --- Menu System --- */
+        #menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 8, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.5s ease;
+        }
+
+        .cyber-panel {
+            position: relative;
+            width: 90%;
+            max-width: 400px;
+            padding: 60px 40px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+            transform: skewX(-2deg);
+        }
+
+        /* Decor Lines */
+        .cyber-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+        }
+        .cyber-panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-pink), transparent);
+        }
+
+        .title-glitch {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 5px;
+            text-shadow: 3px 0 var(--neon-pink), -3px 0 var(--neon-blue);
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            color: var(--neon-blue);
+            letter-spacing: 5px;
+            font-size: 1rem;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            opacity: 0.8;
+            text-align: center;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-bottom: 2px solid var(--neon-blue);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 30px;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            background: rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        .btn-cyber {
+            position: relative;
+            width: 100%;
+            padding: 20px;
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .btn-cyber:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 40px var(--neon-blue);
+        }
+
+        .controls-hint {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            font-size: 0.8rem;
+            color: #666;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .key {
+            border: 1px solid #444;
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: #fff;
+            background: #222;
+        }
+
+        /* --- Touch Controls --- */
+        .touch-zone {
+            position: absolute;
+            top: 20%; bottom: 0; width: 50%;
+            z-index: 20;
+            /* background: rgba(255,0,0,0.1); Debugging */
+        }
+        #t-left { left: 0; }
+        #t-right { right: 0; }
+
+        /* --- Animations --- */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.3) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 99;
+            opacity: 0.3;
+        }
+
+        .system-failure .title-glitch {
+            text-shadow: 5px 0 rgb(255, 0, 0), -5px 0 orange;
+            color: #ffaaaa;
+            animation: glitch-text 0.2s infinite;
+        }
+        .system-failure .btn-cyber {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+        .system-failure .btn-cyber:hover {
+            background: var(--neon-pink);
+            color: white;
+            box-shadow: 0 0 40px var(--neon-pink);
+        }
+
+        /* Failure Effects */
+        .failure-flash {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(196, 0, 0, 0.445);
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+            mix-blend-mode: overlay;
+        }
+
+        body.critical-error {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        @keyframes glitch-text {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .title-glitch { font-size: 2.5rem; }
+            .hud-top { padding: 10px 20px; flex-wrap: wrap; gap: 10px; justify-content: center; }
+            .hud-module { align-items: center; }
+            .value { font-size: 1.5rem; }
+            #user-display { display: none; } /* Hide name on small screens to save space */
+        }
+
+    </style>
+    <!-- Import Map to resolve bare module specifiers -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Scanline Overlay for retro feel -->
+    <div class="scanline"></div>
+    <div class="failure-flash" id="flash-overlay"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="hud-module" id="score-display">
+                <span class="label">SCORE</span>
+                <span class="value" id="score-val">0000</span>
+            </div>
+            
+            <div class="hud-module hud-center" id="high-score-display">
+                <span class="label">RECORD</span>
+                <span class="value" id="high-score-val">0000</span>
+            </div>
+
+            <div class="hud-module" id="speed-display">
+                <span class="label">VELOCITY</span>
+                <span class="value" id="speed-val">0</span>
+            </div>
+
+            <div class="hud-module" id="user-display">
+                <span class="label">OPERATOR</span>
+                <span class="value" id="user-val">GUEST</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Touch Zones -->
+    <div id="t-left" class="touch-zone"></div>
+    <div id="t-right" class="touch-zone"></div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div class="cyber-panel" id="main-panel">
+            <div class="title-glitch" id="title-text">NEON<br>RUNNER</div>
+            <div class="subtitle" id="subtitle-text">OVERDRIVE PROTOCOL</div>
+            
+            <input type="text" id="callsign" placeholder="ENTER CALLSIGN" maxlength="12" autocomplete="off">
+            <button class="btn-cyber" id="btn-start">INITIALIZE LINK</button>
+            
+            <div class="controls-hint">
+                <span><span class="key">←</span> <span class="key">→</span></span>
+                <span><span class="key">A</span> <span class="key">D</span></span>
+                <span>TAP SIDES</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Based Script for Three.js + PostProcessing -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { GlitchPass } from 'three/addons/postprocessing/GlitchPass.js';
+
+        /* * =========================================
+         * CORE ENGINE CONFIGURATION
+         * =========================================
+         */
+        const CONFIG = {
+            laneWidth: 4.5,
+            baseSpeed: 0.8,
+            maxSpeed: 3.5,
+            speedIncrement: 0.0005,
+            fov: 80,
+            colors: {
+                player: 0x00f3ff,
+                obstacle: 0xff0055,
+                grid: 0xbc13fe,
+                building: 0x111116,
+                fog: 0x0b0b15,
+                sunTop: '#ff0055',
+                sunBottom: '#ffcc00'
+            }
+        };
+
+        /* * =========================================
+         * CLASS: SOUND MANAGER (Web Audio API)
+         * =========================================
+         */
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.engineOsc = null;
+                this.engineFilter = null;
+                this.isMuted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = 0.25; // Main volume
+                    this.masterGain.connect(this.ctx.destination);
+                }
+                
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                
+                this.startEngine();
+            }
+
+            startEngine() {
+                if(this.engineOsc) return;
+                
+                // Engine drone using sawtooth
+                this.engineOsc = this.ctx.createOscillator();
+                this.engineOsc.type = 'sawtooth';
+                this.engineOsc.frequency.value = 60;
+                
+                // Lowpass filter to make it sound like a hum
+                this.engineFilter = this.ctx.createBiquadFilter();
+                this.engineFilter.type = 'lowpass';
+                this.engineFilter.frequency.value = 200;
+
+                this.engineOsc.connect(this.engineFilter);
+                this.engineFilter.connect(this.masterGain);
+                this.engineOsc.start();
+            }
+
+            stopEngine() {
+                if(this.engineOsc) {
+                    this.engineOsc.stop();
+                    this.engineOsc.disconnect();
+                    this.engineFilter.disconnect();
+                    this.engineOsc = null;
+                }
+            }
+
+            updateEngine(speed) {
+                if(!this.engineOsc || !this.ctx) return;
+                
+                // Pitch rises with speed
+                const targetPitch = 60 + (speed * 40);
+                this.engineOsc.frequency.setTargetAtTime(targetPitch, this.ctx.currentTime, 0.1);
+                
+                // Filter opens up with speed
+                const targetFilter = 200 + (speed * 400);
+                this.engineFilter.frequency.setTargetAtTime(targetFilter, this.ctx.currentTime, 0.1);
+            }
+
+            playMove() {
+                if(!this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+
+                // High pitch swoosh
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.1);
+                
+                // Short envelope
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playCrash() {
+                if(!this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sawtooth';
+                const gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                
+                // Low chaotic drop
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.5);
+                
+                gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+                
+                this.stopEngine();
+            }
+        }
+
+        /* * =========================================
+         * CLASS: GAME MANAGER
+         * =========================================
+         */
+        class Game {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.composer = null;
+                this.glitchPass = null;
+                
+                this.isPlaying = false;
+                this.score = 0;
+                this.highScore = parseInt(localStorage.getItem('neon_runner_high')) || 0;
+                this.speed = CONFIG.baseSpeed;
+                this.clock = new THREE.Clock();
+                this.animationFrameId = null;
+                
+                this.world = null;
+                this.player = null;
+                this.vfx = null;
+                this.sound = new SoundManager();
+                
+                this.initDOM();
+                this.initThree();
+                this.animate();
+            }
+
+            initDOM() {
+                this.dom = {
+                    menu: document.getElementById('menu-overlay'),
+                    panel: document.getElementById('main-panel'),
+                    title: document.getElementById('title-text'),
+                    subtitle: document.getElementById('subtitle-text'),
+                    input: document.getElementById('callsign'),
+                    btn: document.getElementById('btn-start'),
+                    score: document.getElementById('score-val'),
+                    highScore: document.getElementById('high-score-val'),
+                    speed: document.getElementById('speed-val'),
+                    user: document.getElementById('user-val'),
+                    tLeft: document.getElementById('t-left'),
+                    tRight: document.getElementById('t-right'),
+                    flash: document.getElementById('flash-overlay')
+                };
+
+                // Set initial high score text
+                this.dom.highScore.innerText = this.highScore.toString().padStart(6, '0');
+
+                // Listeners
+                this.dom.btn.addEventListener('click', () => this.startGame());
+                this.dom.input.addEventListener('keypress', (e) => { if(e.key === 'Enter') this.startGame() });
+                
+                // Touch
+                const handleLeft = (e) => { e.preventDefault(); if(this.isPlaying) { this.player.move(-1); this.sound.playMove(); } };
+                const handleRight = (e) => { e.preventDefault(); if(this.isPlaying) { this.player.move(1); this.sound.playMove(); } };
+
+                this.dom.tLeft.addEventListener('pointerdown', handleLeft);
+                this.dom.tRight.addEventListener('pointerdown', handleRight);
+                
+                // Keyboard
+                document.addEventListener('keydown', (e) => this.onKeyDown(e));
+                window.addEventListener('resize', () => this.onResize());
+            }
+
+            initThree() {
+                // Scene
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(CONFIG.colors.fog);
+                this.scene.fog = new THREE.FogExp2(CONFIG.colors.fog, 0.02);
+
+                // Camera
+                this.camera = new THREE.PerspectiveCamera(CONFIG.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(0, 3, 6);
+                this.camera.lookAt(0, 1, -20);
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+                this.renderer.toneMapping = THREE.ReinhardToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                document.body.appendChild(this.renderer.domElement);
+
+                // Post Processing
+                const renderScene = new RenderPass(this.scene, this.camera);
+                
+                // Bloom
+                const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+                bloomPass.strength = 1.6;
+                bloomPass.radius = 0.5;
+                bloomPass.threshold = 0.15; 
+
+                // Glitch (disabled by default)
+                this.glitchPass = new GlitchPass();
+                this.glitchPass.enabled = false;
+                this.glitchPass.goWild = true; // Make it extra glitchy
+
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(renderScene);
+                this.composer.addPass(bloomPass);
+                this.composer.addPass(this.glitchPass);
+
+                // Lighting
+                const ambient = new THREE.AmbientLight(0xffffff, 0.2);
+                this.scene.add(ambient);
+                
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(0, 20, 10);
+                this.scene.add(dirLight);
+
+                // Subsystems
+                this.world = new WorldManager(this.scene);
+                this.player = new Player(this.scene);
+                this.vfx = new VFXManager(this.scene);
+
+                // Add Background Sun
+                this.createRetroSun();
+            }
+
+            createRetroSun() {
+                // Generate a striped texture via canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+
+                // Gradient
+                const grad = ctx.createLinearGradient(0, 0, 0, 128);
+                grad.addColorStop(0, CONFIG.colors.sunTop);
+                grad.addColorStop(1, CONFIG.colors.sunBottom);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 128, 128);
+
+                // Stripes (transparent lines cutting through)
+                ctx.fillStyle = 'rgba(0,0,0,1)';
+                for(let y=64; y<128; y+= (y-60)*0.2) {
+                    ctx.fillRect(0, y, 128, Math.max(1, (y-60)*0.1));
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.MeshBasicMaterial({ 
+                    map: texture,
+                    transparent: true,
+                    fog: false
+                });
+
+                const geometry = new THREE.PlaneGeometry(60, 60);
+                const sun = new THREE.Mesh(geometry, material);
+                sun.position.set(0, 25, -120);
+                this.scene.add(sun);
+            }
+
+            startGame() {
+                // Init Audio on user gesture
+                this.sound.init();
+
+                const name = this.dom.input.value.trim() || "OPERATOR";
+                this.dom.user.innerText = name.toUpperCase();
+                
+                // Disable Glitch
+                this.glitchPass.enabled = false;
+                document.body.classList.remove('critical-error');
+                this.dom.flash.style.display = 'none';
+
+                // UI Reset
+                this.dom.menu.style.opacity = 0;
+                setTimeout(() => { this.dom.menu.style.display = 'none'; }, 500);
+                
+                this.dom.panel.classList.remove('system-failure');
+                this.dom.title.innerHTML = "NEON<br>RUNNER";
+                this.dom.btn.innerText = "INITIALIZE LINK";
+                this.dom.subtitle.innerText = "OVERDRIVE PROTOCOL";
+
+                // Game Logic Reset
+                this.score = 0;
+                this.speed = CONFIG.baseSpeed;
+                this.player.reset();
+                this.world.reset();
+                this.vfx.reset();
+                this.isPlaying = true;
+            }
+
+            gameOver() {
+                this.isPlaying = false;
+                this.sound.playCrash();
+                
+                // ENABLE CHAOS
+                this.glitchPass.enabled = true;
+                document.body.classList.add('critical-error');
+                this.dom.flash.style.display = 'block';
+
+                // High Score Check
+                if (this.score > this.highScore) {
+                    this.highScore = Math.floor(this.score);
+                    localStorage.setItem('neon_runner_high', this.highScore);
+                    this.dom.highScore.innerText = this.highScore.toString().padStart(6, '0');
+                }
+                
+                // Huge explosion
+                this.vfx.createExplosion(this.player.mesh.position, 60);
+                
+                // Shake effect final
+                this.shakeCamera(1.0); // Harder shake
+
+                setTimeout(() => {
+                    this.dom.menu.style.display = 'flex';
+                    // Trigger reflow
+                    void this.dom.menu.offsetWidth;
+                    this.dom.menu.style.opacity = 1;
+
+                    this.dom.panel.classList.add('system-failure');
+                    this.dom.title.innerHTML = "SYSTEM<br>FAILURE";
+                    this.dom.subtitle.innerText = "CONNECTION TERMINATED";
+                    this.dom.btn.innerText = "REBOOT SYSTEM";
+                    this.dom.input.focus();
+                }, 1500);
+            }
+
+            shakeCamera(intensity) {
+                // Simple one-off shake
+                const duration = 500;
+                const start = Date.now();
+                const originalPos = this.camera.position.clone();
+                
+                const shakeInterval = setInterval(() => {
+                    const elapsed = Date.now() - start;
+                    if(elapsed > duration) {
+                        clearInterval(shakeInterval);
+                        this.camera.position.copy(originalPos);
+                        return;
+                    }
+                    const strength = intensity * (1 - elapsed/duration);
+                    this.camera.position.x = originalPos.x + (Math.random()-0.5) * strength;
+                    this.camera.position.y = originalPos.y + (Math.random()-0.5) * strength;
+                }, 16);
+            }
+
+            onKeyDown(e) {
+                if(!this.isPlaying) return;
+                switch(e.key) {
+                    case 'a': case 'A': case 'ArrowLeft': 
+                        this.player.move(-1); 
+                        this.sound.playMove();
+                        break;
+                    case 'd': case 'D': case 'ArrowRight': 
+                        this.player.move(1); 
+                        this.sound.playMove();
+                        break;
+                }
+            }
+
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.composer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            animate() {
+                this.animationFrameId = requestAnimationFrame(() => this.animate());
+                
+                const dt = Math.min(this.clock.getDelta(), 0.1); 
+                const now = this.clock.getElapsedTime();
+
+                // Rotate menu if idle
+                if (!this.isPlaying) {
+                    this.world.idleMove(dt);
+                    this.player.idleBob(now);
+                } else {
+                    // Game Loop
+                    this.speed = Math.min(this.speed + CONFIG.speedIncrement, CONFIG.maxSpeed);
+                    this.sound.updateEngine(this.speed);
+                    
+                    this.world.update(dt, this.speed);
+                    this.player.update(dt, this.speed);
+                    this.vfx.update(dt, this.speed);
+
+                    // Collision Detection
+                    if(this.world.checkCollision(this.player.mesh.position)) {
+                        this.gameOver();
+                    }
+
+                    // Score Update
+                    this.score += this.speed * 10;
+                    this.dom.score.innerText = Math.floor(this.score).toString().padStart(6, '0');
+                    this.dom.speed.innerText = (this.speed * 100).toFixed(0) + " KM/H";
+                    
+                    // Dynamic FOV based on speed
+                    this.camera.fov = CONFIG.fov + (this.speed * 10);
+                    this.camera.updateProjectionMatrix();
+                }
+
+                // Render via Composer (Bloom)
+                this.composer.render();
+            }
+        }
+
+        /* * =========================================
+         * CLASS: WORLD MANAGER (City & Obstacles)
+         * =========================================
+         */
+        class WorldManager {
+            constructor(scene) {
+                this.scene = scene;
+                this.chunkSize = 200;
+                this.chunks = [];
+                this.obstacles = [];
+                this.buildings = [];
+                this.lastSpawnZ = -50;
+                
+                this.initMaterials();
+                this.initInitialChunks();
+            }
+
+            initMaterials() {
+                this.gridMat = new THREE.LineBasicMaterial({ color: CONFIG.colors.grid, opacity: 0.4, transparent: true });
+                this.floorMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                this.obsMat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.obstacle, wireframe: true });
+                this.obsCoreMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                this.bldgMat = new THREE.MeshLambertMaterial({ color: CONFIG.colors.building });
+                this.bldgEdgeMat = new THREE.LineBasicMaterial({ color: 0x222244 });
+            }
+
+            initInitialChunks() {
+                for(let i=0; i<3; i++) {
+                    this.spawnChunk(-i * this.chunkSize);
+                }
+            }
+
+            reset() {
+                this.obstacles.forEach(o => this.scene.remove(o.mesh));
+                this.obstacles = [];
+                this.lastSpawnZ = -50;
+            }
+
+            spawnChunk(zPos) {
+                // Ground Plane
+                const gridHelper = new THREE.GridHelper(this.chunkSize, 20, CONFIG.colors.grid, CONFIG.colors.grid);
+                gridHelper.position.set(0, 0, zPos - this.chunkSize/2);
+                gridHelper.scale.y = 1;
+                this.scene.add(gridHelper);
+                
+                // Black floor to hide bottom
+                const floor = new THREE.Mesh(new THREE.PlaneGeometry(this.chunkSize, this.chunkSize), this.floorMat);
+                floor.rotation.x = -Math.PI/2;
+                floor.position.set(0, -0.1, zPos - this.chunkSize/2);
+                this.scene.add(floor);
+
+                this.chunks.push({ grid: gridHelper, floor: floor });
+                
+                // Generate Buildings on sides
+                this.spawnBuildings(zPos);
+            }
+
+            spawnBuildings(zOffset) {
+                const count = 10;
+                for(let i=0; i<count; i++) {
+                    const z = (zOffset - this.chunkSize) + Math.random() * this.chunkSize;
+                    
+                    // Left Side
+                    this.createBuilding(-20 - Math.random()*30, z);
+                    // Right Side
+                    this.createBuilding(20 + Math.random()*30, z);
+                }
+            }
+
+            createBuilding(x, z) {
+                const h = 20 + Math.random() * 60;
+                const w = 10 + Math.random() * 20;
+                const geo = new THREE.BoxGeometry(w, h, w);
+                
+                const mesh = new THREE.Mesh(geo, this.bldgMat);
+                mesh.position.set(x, h/2 - 10, z);
+                
+                // Add glowing edges
+                const edges = new THREE.EdgesGeometry(geo);
+                const line = new THREE.LineSegments(edges, this.bldgEdgeMat);
+                mesh.add(line);
+                
+                this.scene.add(mesh);
+                this.buildings.push(mesh);
+            }
+
+            spawnObstacle(z) {
+                const lane = Math.floor(Math.random() * 3) - 1;
+                const x = lane * CONFIG.laneWidth;
+                
+                // Group to hold wireframe and black core
+                const group = new THREE.Group();
+                
+                // Shape randomization
+                const type = Math.random();
+                let geo;
+                let rotate = false;
+                
+                if (type > 0.7) {
+                    // Tall Pillar
+                    geo = new THREE.BoxGeometry(2, 8, 2);
+                    group.position.y = 4;
+                } else if (type > 0.4) {
+                    // Standard Cube
+                    geo = new THREE.BoxGeometry(2.5, 2.5, 2.5);
+                    group.position.y = 1.25;
+                } else {
+                    // Floating Diamond
+                    geo = new THREE.OctahedronGeometry(1.5);
+                    group.position.y = 2;
+                    rotate = true;
+                }
+
+                const mesh = new THREE.Mesh(geo, this.obsCoreMat);
+                const edges = new THREE.EdgesGeometry(geo);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: CONFIG.colors.obstacle }));
+                
+                group.add(mesh);
+                group.add(line);
+                
+                group.position.x = x;
+                group.position.z = z;
+                
+                // Random rotation
+                group.rotation.y = Math.random() * Math.PI;
+
+                this.scene.add(group);
+                
+                // Update matrix before box calculation
+                group.updateMatrixWorld(true);
+                
+                this.obstacles.push({ 
+                    mesh: group, 
+                    box: new THREE.Box3().setFromObject(group),
+                    rotate: rotate,
+                    rotSpeed: (Math.random() - 0.5) * 4
+                });
+            }
+
+            idleMove(dt) {
+                const speed = 10;
+                this.moveWorld(speed * dt);
+            }
+
+            update(dt, speed) {
+                const moveDist = speed * 40 * dt; 
+                this.moveWorld(moveDist);
+
+                // Rotate special obstacles
+                this.obstacles.forEach(o => {
+                    if(o.rotate) {
+                        o.mesh.rotation.y += o.rotSpeed * dt;
+                        o.mesh.rotation.x += o.rotSpeed * 0.5 * dt;
+                    }
+                });
+
+                // Spawn Obstacles logic
+                if (this.lastSpawnZ > -100) { 
+                    const spawnDist = 40; 
+                    this.spawnObstacle(this.lastSpawnZ - spawnDist - (Math.random() * 20));
+                    this.lastSpawnZ -= spawnDist;
+                }
+            }
+
+            moveWorld(dist) {
+                // Move Grid
+                this.chunks.forEach(chunk => {
+                    chunk.grid.position.z += dist;
+                    chunk.floor.position.z += dist;
+                });
+
+                // Recycle Chunks
+                if(this.chunks[0].grid.position.z > this.chunkSize/2) {
+                    const removed = this.chunks.shift();
+                    removed.grid.position.z -= this.chunkSize * 3;
+                    removed.floor.position.z -= this.chunkSize * 3;
+                    this.chunks.push(removed);
+                    
+                    // Also spawn new buildings at back
+                    this.spawnBuildings(removed.grid.position.z);
+                }
+
+                // Move Buildings
+                for (let i = this.buildings.length - 1; i >= 0; i--) {
+                    let b = this.buildings[i];
+                    b.position.z += dist;
+                    if(b.position.z > 20) {
+                        this.scene.remove(b);
+                        this.buildings.splice(i, 1);
+                    }
+                }
+
+                // Move Obstacles
+                for (let i = this.obstacles.length - 1; i >= 0; i--) {
+                    let o = this.obstacles[i];
+                    o.mesh.position.z += dist;
+                    o.box.setFromObject(o.mesh); // Update collider
+                    
+                    // Passed player
+                    if(o.mesh.position.z > 10) {
+                        this.scene.remove(o.mesh);
+                        this.obstacles.splice(i, 1);
+                        this.lastSpawnZ += dist; // Adjust spawn tracking
+                    }
+                }
+            }
+
+            checkCollision(playerPos) {
+                // Simple box distance check first for performance
+                const playerBox = new THREE.Box3().setFromCenterAndSize(playerPos, new THREE.Vector3(1,1,1));
+                
+                for(let o of this.obstacles) {
+                    if (o.mesh.position.z > -5 && o.mesh.position.z < 5) {
+                        // Tighten hitbox slightly for forgiveness
+                        const hitbox = new THREE.Box3().setFromObject(o.mesh);
+                        hitbox.expandByScalar(-0.3); 
+                        if (hitbox.intersectsBox(playerBox)) return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        /* * =========================================
+         * CLASS: PLAYER
+         * =========================================
+         */
+        class Player {
+            constructor(scene) {
+                this.scene = scene;
+                this.lane = 0;
+                this.targetX = 0;
+                
+                this.mesh = this.createShip();
+                this.scene.add(this.mesh);
+            }
+
+            createShip() {
+                const group = new THREE.Group();
+                
+                // Main Body
+                const geoBody = new THREE.ConeGeometry(0.5, 2, 4);
+                geoBody.rotateX(Math.PI / 2);
+                const matBody = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const meshBody = new THREE.Mesh(geoBody, matBody);
+                
+                const edgesBody = new THREE.EdgesGeometry(geoBody);
+                const lineBody = new THREE.LineSegments(edgesBody, new THREE.LineBasicMaterial({ color: CONFIG.colors.player }));
+                
+                // Engines
+                const geoEng = new THREE.BoxGeometry(0.4, 0.4, 1);
+                const matEng = new THREE.MeshBasicMaterial({ color: CONFIG.colors.player });
+                
+                const leftEng = new THREE.Mesh(geoEng, matEng);
+                leftEng.position.set(-0.6, 0, 0.5);
+                
+                const rightEng = new THREE.Mesh(geoEng, matEng);
+                rightEng.position.set(0.6, 0, 0.5);
+
+                group.add(meshBody);
+                group.add(lineBody);
+                group.add(leftEng);
+                group.add(rightEng);
+                
+                group.position.y = 1;
+                return group;
+            }
+
+            reset() {
+                this.lane = 0;
+                this.targetX = 0;
+                this.mesh.position.x = 0;
+                this.mesh.rotation.z = 0;
+                this.mesh.visible = true;
+            }
+
+            move(dir) {
+                this.lane += dir;
+                this.lane = Math.max(-1, Math.min(1, this.lane));
+                this.targetX = this.lane * CONFIG.laneWidth;
+            }
+
+            idleBob(now) {
+                this.mesh.position.y = 1 + Math.sin(now * 2) * 0.1;
+                this.mesh.rotation.z = Math.sin(now) * 0.05;
+            }
+
+            update(dt, speed) {
+                // Smooth move
+                const x = this.mesh.position.x;
+                const dx = this.targetX - x;
+                this.mesh.position.x += dx * 10 * dt;
+                
+                // Bank (Tilt) effect
+                const maxTilt = 0.5;
+                this.mesh.rotation.z = -dx * 0.5; // Tilt based on movement speed
+                
+                // Bobbing faster at speed
+                this.mesh.position.y = 1 + Math.sin(Date.now() * 0.02) * 0.1;
+            }
+        }
+
+        /* * =========================================
+         * CLASS: VFX MANAGER (Particles, etc)
+         * =========================================
+         */
+        class VFXManager {
+            constructor(scene) {
+                this.scene = scene;
+                this.particles = [];
+                this.speedLines = [];
+                
+                this.initSpeedLines();
+            }
+
+            initSpeedLines() {
+                const geo = new THREE.BufferGeometry();
+                const pos = [];
+                for(let i=0; i<400; i++) { 
+                    pos.push(
+                        (Math.random()-0.5)*150, 
+                        (Math.random())*80, 
+                        (Math.random()-0.5)*200 - 50
+                    );
+                }
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.8 });
+                this.starSystem = new THREE.Points(geo, mat);
+                this.scene.add(this.starSystem);
+            }
+
+            reset() {
+                this.particles.forEach(p => this.scene.remove(p.mesh));
+                this.particles = [];
+            }
+
+            createExplosion(pos, count = 40) {
+                const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+                const mat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.player });
+
+                for(let i=0; i<count; i++) {
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.copy(pos);
+                    
+                    // Random velocity
+                    const vel = new THREE.Vector3(
+                        (Math.random()-0.5) * 15,
+                        (Math.random()-0.5) * 15,
+                        (Math.random()-0.5) * 15
+                    );
+                    
+                    this.scene.add(mesh);
+                    this.particles.push({ mesh, vel, life: 1.0 });
+                }
+            }
+
+            update(dt, speed) {
+                // Update Stars/SpeedLines
+                const positions = this.starSystem.geometry.attributes.position.array;
+                for(let i=2; i<positions.length; i+=3) {
+                    positions[i] += speed * 50 * dt;
+                    if(positions[i] > 10) positions[i] = -200;
+                }
+                this.starSystem.geometry.attributes.position.needsUpdate = true;
+
+                // Update Particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.life -= dt;
+                    p.mesh.position.addScaledVector(p.vel, dt);
+                    p.mesh.rotation.x += dt * 5;
+                    p.mesh.rotation.y += dt * 5;
+                    p.mesh.scale.setScalar(p.life);
+                    
+                    if(p.life <= 0) {
+                        this.scene.remove(p.mesh);
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        // --- Start ---
+        const game = new Game();
+
+    </script>
+</body>
+</html>
